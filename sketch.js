@@ -54,8 +54,8 @@ function setup() {
 } 
 
 function draw() { 
-    // 設定半透明背景以產生拖影效果，透明度調低讓拖影更不明顯，增強視覺對比
-    background(255, 5); 
+    // 【強化點 2】降低背景透明度：從 5 降至 2，讓背景更暗，對比度更高
+    background(255, 2); 
     textAlign(CENTER);
 
     // -----------------------------------------------------------------
@@ -77,14 +77,11 @@ function draw() {
 
     textSize(80); 
     
-    // -------------------------------------------------------------
-    // 【強化點】滿分煙火邏輯
-    // -------------------------------------------------------------
+    // 滿分煙火邏輯
     if (percentage >= 99.9) { 
         fill(120, 100, 80); // 綠色
         text("🎉 完美！100% 滿分！ 🎉", width / 2, promptY);
 
-        // 【強化點 1】增加煙火發射頻率：每 15 幀生成一個 (從 30 幀減少到 15 幀)
         if (frameCount % 15 === 0) { 
             fireworks.push(new Firework(random(width), height)); 
         }
@@ -144,14 +141,16 @@ class Particle {
     constructor(x, y, hu, isFirework) {
         this.pos = createVector(x, y);
         this.isFirework = isFirework; // 如果是發射中的煙火，為 true
-        this.lifespan = 255;
+        // 【強化點 3】增加粒子初始壽命 (從 255 增至 300)
+        this.lifespan = 300; 
         this.hu = hu; // 顏色色相 (Hue)
 
         if (this.isFirework) {
             this.vel = createVector(0, random(-10, -15)); // 向上發射
         } else {
             this.vel = p5.Vector.random2D();
-            this.vel.mult(random(1, 8)); // 爆炸後向四周擴散
+            // 【強化點 1】增強爆炸初始速度 (從 1~8 增至 2~10)
+            this.vel.mult(random(2, 10)); 
         }
         this.acc = createVector(0, 0);
     }
@@ -163,7 +162,8 @@ class Particle {
     update() {
         if (!this.isFirework) {
             this.vel.mult(0.95); // 爆炸粒子速度減緩
-            this.lifespan -= 4; // 爆炸粒子逐漸消失
+            // 【強化點 3】粒子壽命消耗速度降低 (從 4 降至 3)
+            this.lifespan -= 3; 
         }
         this.vel.add(this.acc);
         this.pos.add(this.vel);
@@ -171,13 +171,14 @@ class Particle {
     }
 
     show() {
-        // 【強化點 3】增加光暈效果 (Shadow Blur)
+        
         const c = color(this.hu, 100, 100, this.lifespan);
         
-        drawingContext.shadowBlur = this.isFirework ? 10 : 8; // 粒子光暈
+        // 增加光暈效果 (Shadow Blur)
+        drawingContext.shadowBlur = this.isFirework ? 12 : 10; // 光暈調亮
         drawingContext.shadowColor = c;
         
-        strokeWeight(this.isFirework ? 5 : 3); // 【強化點 4】增加線條粗細
+        strokeWeight(this.isFirework ? 6 : 4); // 線條粗細再增加
         stroke(c); 
         point(this.pos.x, this.pos.y);
         
@@ -222,7 +223,7 @@ class Firework {
     }
 
     explode() {
-        // 【強化點 2】增加爆炸粒子數量 (從 100 增加到 200)
+        // 增加爆炸粒子數量 (維持 200 顆，確保性能)
         for (let i = 0; i < 200; i++) {
             let p = new Particle(this.firework.pos.x, this.firework.pos.y, this.hu, false);
             this.particles.push(p);
