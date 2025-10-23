@@ -54,8 +54,8 @@ function setup() {
 } 
 
 function draw() { 
-    // 設定半透明背景以產生拖影效果 (僅在動畫啟動時明顯)
-    background(255, 10); 
+    // 設定半透明背景以產生拖影效果，透明度調低讓拖影更不明顯，增強視覺對比
+    background(255, 5); 
     textAlign(CENTER);
 
     // -----------------------------------------------------------------
@@ -65,12 +65,11 @@ function draw() {
         textSize(80); 
         fill(0, 0, 60); // 灰色
         text("等待 H5P 成績中...", width / 2, height / 2);
-        // 初始狀態不執行後續動畫和分數顯示
         return; 
     }
     
     // -----------------------------------------------------------------
-    // B. 處理已接收到分數的狀態 (當 finalScore 或 maxScore 不為 0 時)
+    // B. 處理已接收到分數的狀態
     // -----------------------------------------------------------------
     let percentage = (finalScore / maxScore) * 100;
     let promptY = height / 2 - 50; // 提示文本位置
@@ -78,14 +77,15 @@ function draw() {
 
     textSize(80); 
     
-    // 根據分數區間顯示提示文本
+    // -------------------------------------------------------------
+    // 【強化點】滿分煙火邏輯
+    // -------------------------------------------------------------
     if (percentage >= 99.9) { 
         fill(120, 100, 80); // 綠色
         text("🎉 完美！100% 滿分！ 🎉", width / 2, promptY);
 
-        // 滿分煙火邏輯
-        if (frameCount % 30 === 0) { // 每隔 30 幀生成一個新的煙火 (約 0.5 秒)
-            // 從底部隨機位置發射
+        // 【強化點 1】增加煙火發射頻率：每 15 幀生成一個 (從 30 幀減少到 15 幀)
+        if (frameCount % 15 === 0) { 
             fireworks.push(new Firework(random(width), height)); 
         }
 
@@ -106,7 +106,7 @@ function draw() {
         fill(40, 80, 80); // 黃色
         text("成績良好，請再接再厲。", width / 2, promptY);
         
-    } else { // percentage > 0 且 < 60，或 finalScore=0 但 maxScore > 0
+    } else { // percentage > 0 且 < 60
         fill(0, 80, 80); // 紅色
         text("需要加強努力！", width / 2, promptY);
     }
@@ -121,14 +121,12 @@ function draw() {
     // C. 根據分數觸發不同的幾何圖形反映 
     // -----------------------------------------------------------------
     
-    if (percentage >= 90 && percentage < 99.9) { // 避免與滿分煙火衝突
-        // 畫一個大圓圈代表完美 
+    if (percentage >= 90 && percentage < 99.9) { 
         fill(120, 80, 80, 0.5); // 半透明綠色
         noStroke();
         circle(width / 2, height / 2 + 150, 150);
         
     } else if (percentage >= 60) {
-        // 畫一個方形 
         fill(40, 80, 80, 0.5); // 半透明黃色
         rectMode(CENTER);
         rect(width / 2, height / 2 + 150, 150, 150);
@@ -138,7 +136,7 @@ function draw() {
 
 
 // =================================================================
-// 步驟三：新增 Firework 和 Particle 類別 (簡化版)
+// 步驟三：新增 Firework 和 Particle 類別 (強化版)
 // -----------------------------------------------------------------
 
 // 粒子類別 (Particle Class)
@@ -173,11 +171,19 @@ class Particle {
     }
 
     show() {
-        // HSB 顏色模式已在 setup 中設定
-        strokeWeight(this.isFirework ? 4 : 2); // 發射中的煙火線條較粗
-        // 使用 this.lifespan 作為 Alpha 值 (第四個參數，範圍 0-255)
-        stroke(this.hu, 100, 100, this.lifespan); 
+        // 【強化點 3】增加光暈效果 (Shadow Blur)
+        const c = color(this.hu, 100, 100, this.lifespan);
+        
+        drawingContext.shadowBlur = this.isFirework ? 10 : 8; // 粒子光暈
+        drawingContext.shadowColor = c;
+        
+        strokeWeight(this.isFirework ? 5 : 3); // 【強化點 4】增加線條粗細
+        stroke(c); 
         point(this.pos.x, this.pos.y);
+        
+        // 畫完後重設，避免影響其他繪圖
+        drawingContext.shadowBlur = 0;
+        drawingContext.shadowColor = 'rgba(0,0,0,0)';
     }
 
     done() {
@@ -200,7 +206,6 @@ class Firework {
             this.firework.update();
 
             if (this.firework.vel.y >= 0 && this.firework.pos.y < height * 0.7) { 
-                // 當向上速度轉為向下，且達到一定高度時爆炸
                 this.exploded = true;
                 this.explode();
             }
@@ -217,8 +222,8 @@ class Firework {
     }
 
     explode() {
-        // 創建大量爆炸粒子
-        for (let i = 0; i < 100; i++) {
+        // 【強化點 2】增加爆炸粒子數量 (從 100 增加到 200)
+        for (let i = 0; i < 200; i++) {
             let p = new Particle(this.firework.pos.x, this.firework.pos.y, this.hu, false);
             this.particles.push(p);
         }
@@ -235,7 +240,6 @@ class Firework {
     }
 
     done() {
-        // 煙火完成條件：已爆炸且所有爆炸粒子都已消亡
         return this.exploded && this.particles.length === 0;
     }
 }
