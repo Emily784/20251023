@@ -2,13 +2,13 @@
 // 步驟一：模擬成績數據接收
 // -----------------------------------------------------------------
 
-// 確保這是全域變數
+// 確保這是全域變數，用於儲存 H5P 傳來的分數
 let finalScore = 0; 
 let maxScore = 0;
-let scoreText = ""; // 用於 p5.js 繪圖的文字
+let scoreText = ""; 
 
 // --- 【新增：煙火相關全域變數】 ---
-let fireworks = []; // 儲存所有的煙火物件
+let fireworks = []; // 儲存所有的煙火爆炸物件
 // ------------------------------------
 
 window.addEventListener('message', function (event) {
@@ -19,14 +19,14 @@ window.addEventListener('message', function (event) {
     if (data && data.type === 'H5P_SCORE_RESULT') {
         
         // !!! 關鍵步驟：更新全域變數 !!!
-        finalScore = data.score; // 更新全域變數
-        maxScore = data.maxScore;
+        finalScore = data.score; // 更新得分
+        maxScore = data.maxScore; // 更新總分
         scoreText = `最終成績分數: ${finalScore}/${maxScore}`;
         
         console.log("新的分數已接收:", scoreText); 
         
         // ----------------------------------------
-        // 關鍵步驟 2: 呼叫重新繪製 (見方案二)
+        // 關鍵步驟 2: 呼叫 redraw() 確保畫面更新
         // ----------------------------------------
         if (typeof redraw === 'function') {
             redraw(); 
@@ -36,21 +36,22 @@ window.addEventListener('message', function (event) {
 
 
 // =================================================================
-// 步驟二：使用 p5.js 繪製分數 (在網頁 Canvas 上顯示)
+// 步驟二：使用 p5.js 繪製分數與煙火
 // -----------------------------------------------------------------
 
 function setup() { 
-    // ... (其他設置)
+    // 根據視窗大小創建 Canvas
     createCanvas(windowWidth / 2, windowHeight / 2); 
-    // 設定 HSB 顏色模式，方便煙火顏色隨機
+    // 設定 HSB 顏色模式 (色相, 飽和度, 亮度, 透明度)，方便煙火顏色隨機
     colorMode(HSB, 360, 100, 100, 1); 
     background(0); // 黑色背景適合煙火
-    // !! 關鍵修正：移除 noLoop() 確保 draw() 連續執行來模擬動畫 !!
-    // noLoop(); 
+    
+    // !! 關鍵修正：確保 draw() 函式連續執行 (已移除 noLoop()) !!
+    angleMode(RADIANS); // 確保使用弧度計算
 } 
 
 
-// --- 【新增：簡化版的煙火函式】 ---
+// --- 【新增：簡化版的煙火發射函式】 ---
 function launchFirework() {
     // 讓煙火在畫面上方隨機位置爆炸
     let centerX = random(width * 0.2, width * 0.8);
@@ -60,7 +61,7 @@ function launchFirework() {
     let hue = random(360); // 隨機顏色
     let maxSpeed = 8;
     
-    // 創建一個爆炸物件 (簡化版的 Firework Class)
+    // 創建一個爆炸物件
     let explosion = {
         particles: [],
         color: hue,
@@ -69,16 +70,17 @@ function launchFirework() {
         // 初始化爆炸粒子
         init: function() {
             for (let i = 0; i < particleCount; i++) {
-                let angle = map(i, 0, particleCount, 0, TWO_PI);
+                // 將粒子均勻分佈在圓周上
+                let angle = map(i, 0, particleCount, 0, TWO_PI); 
                 let speed = random(maxSpeed * 0.5, maxSpeed);
                 
                 this.particles.push({
                     x: centerX,
                     y: centerY,
-                    // 隨機發散速度 (讓粒子散開更自然)
+                    // 隨機發散速度
                     vx: cos(angle) * speed * random(0.5, 1.5), 
                     vy: sin(angle) * speed * random(0.5, 1.5),
-                    life: 255, // 粒子壽命 (用來控制透明度)
+                    life: 255, // 粒子壽命
                     size: random(2, 5)
                 });
             }
@@ -88,12 +90,12 @@ function launchFirework() {
         updateAndShow: function() {
             if (!this.isAlive) return;
 
-            let gravity = createVector(0, 0.1); // 簡化重力
+            let gravity = createVector(0, 0.1); // 重力向量
 
             for (let i = this.particles.length - 1; i >= 0; i--) {
                 let p = this.particles[i];
                 
-                // 應用重力 (簡化為直接修改 vy)
+                // 應用重力
                 p.vy += gravity.y; 
                 
                 // 更新位置
@@ -105,7 +107,7 @@ function launchFirework() {
                 
                 // 繪製粒子
                 noStroke();
-                // HSB 顏色：色相(this.color), 飽和度(100), 亮度(100), 透明度(p.life/255)
+                // 使用 HSB 顏色和粒子壽命計算透明度 (Alpha)
                 fill(this.color, 100, 100, p.life / 255); 
                 ellipse(p.x, p.y, p.size);
                 
@@ -132,7 +134,7 @@ function launchFirework() {
 function draw() { 
     
     // 關鍵：使用帶透明度的背景，製造煙火的殘影效果
-    colorMode(RGB); // 切回 RGB 處理背景透明度
+    colorMode(RGB); // 切回 RGB 處理背景透明度 (Alpha)
     background(0, 0, 0, 25); // 黑色背景，25/255 透明度
     colorMode(HSB, 360, 100, 100, 1); // 切回 HSB 處理煙火顏色
 
@@ -141,7 +143,7 @@ function draw() {
     let isPerfectScore = (finalScore === maxScore && maxScore > 0); // 檢查是否滿分
 
     // -----------------------------------------------------------------
-    // A. 根據分數區間改變文本顏色和內容 (畫面反映一)
+    // A. 根據分數區間改變文本顏色和內容
     // -----------------------------------------------------------------
     textSize(80); 
     textAlign(CENTER);
@@ -154,31 +156,31 @@ function draw() {
         // -----------------------------------------------------------------
         // C. 【觸發煙火特效】
         // -----------------------------------------------------------------
-        // 每隔一段時間（例如 30 幀）發射一個新的煙火
+        // 每隔一段時間（例如 30 幀，約每半秒）發射一個新的煙火
         if (frameCount % 30 === 0) { 
             launchFirework(); 
         }
         
     } else if (percentage >= 90) {
-        // 高分：顯示鼓勵文本，使用鮮豔顏色
+        // 高分
         fill(100, 100, 90); // 綠色 
         text("恭喜！優異成績！", width / 2, height / 2 - 50);
         
     } else if (percentage >= 60) {
-        // 中等分數：顯示一般文本，使用黃色 
-        fill(45, 100, 100); 
+        // 中等分數
+        fill(45, 100, 100); // 黃色
         text("成績良好，請再接再厲。", width / 2, height / 2 - 50);
         
     } else if (percentage > 0) {
-        // 低分：顯示警示文本，使用紅色 
-        fill(0, 100, 80); 
+        // 低分
+        fill(0, 100, 80); // 紅色
         text("需要加強努力！", width / 2, height / 2 - 50);
         
     } else {
-        // 尚未收到分數或分數為 0
+        // 尚未收到分數
         colorMode(RGB); // 切回 RGB 處理灰色
         fill(150);
-        text(scoreText, width / 2, height / 2);
+        text("等待 H5P 成績中...", width / 2, height / 2);
     }
     
     // -----------------------------------------------------------------
@@ -201,23 +203,20 @@ function draw() {
     
     
     // -----------------------------------------------------------------
-    // B. 根據分數觸發不同的幾何圖形反映 (畫面反映二)
+    // B. 根據分數觸發不同的幾何圖形反映
     // -----------------------------------------------------------------
     colorMode(HSB, 360, 100, 100, 1); // 切回 HSB 繪圖
     
     if (percentage >= 90) {
-        // 畫一個大圓圈代表完美 [7]
+        // 畫一個大圓圈代表完美
         fill(100, 80, 80, 0.5); // 綠色, 帶透明度
         noStroke();
         circle(width / 2, height / 2 + 150, 150);
         
     } else if (percentage >= 60) {
-        // 畫一個方形 [4]
+        // 畫一個方形
         fill(45, 80, 80, 0.5); // 黃色, 帶透明度
         rectMode(CENTER);
         rect(width / 2, height / 2 + 150, 150, 150);
     }
-    
-    // 如果您想要更複雜的視覺效果，還可以根據分數修改線條粗細 (strokeWeight) 
-    // 或使用 sin/cos 函數讓圖案的動畫效果有所不同 [8, 9]。
 }
