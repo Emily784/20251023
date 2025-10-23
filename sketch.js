@@ -2,8 +2,6 @@
 // 步驟一：模擬成績數據接收
 // -----------------------------------------------------------------
 
-
-// let scoreText = "成績分數: " + finalScore + "/" + maxScore;
 // 確保這是全域變數
 let finalScore = 0; 
 let maxScore = 0;
@@ -44,24 +42,25 @@ window.addEventListener('message', function (event) {
 function setup() { 
     // ... (其他設置)
     createCanvas(windowWidth / 2, windowHeight / 2); 
-    colorMode(HSB, 360, 100, 100, 1); // 使用 HSB 顏色模式方便隨機顏色
-    background(0); // 黑色背景更適合煙火
-    //noLoop(); // 移除 noLoop() 以允許 draw 函式連續執行來模擬動畫效果
+    // 設定 HSB 顏色模式，方便煙火顏色隨機
+    colorMode(HSB, 360, 100, 100, 1); 
+    background(0); // 黑色背景適合煙火
+    // !! 關鍵修正：移除 noLoop() 確保 draw() 連續執行來模擬動畫 !!
+    // noLoop(); 
 } 
 
 
-// --- 【新增：簡化版的煙火類別和函式】 ---
-
-// 為了簡化，這裡僅用一個物件來代表煙火爆炸後產生的所有粒子
-// 真實的 p5.js 煙火通常需要 Particle 和 Firework 兩個 Class
+// --- 【新增：簡化版的煙火函式】 ---
 function launchFirework() {
-    let centerX = width / 2;
-    let centerY = height / 2;
+    // 讓煙火在畫面上方隨機位置爆炸
+    let centerX = random(width * 0.2, width * 0.8);
+    let centerY = random(height * 0.3, height * 0.6); 
+
     let particleCount = 60; // 爆炸粒子數量
     let hue = random(360); // 隨機顏色
     let maxSpeed = 8;
     
-    // 創建一個爆炸物件
+    // 創建一個爆炸物件 (簡化版的 Firework Class)
     let explosion = {
         particles: [],
         color: hue,
@@ -76,7 +75,8 @@ function launchFirework() {
                 this.particles.push({
                     x: centerX,
                     y: centerY,
-                    vx: cos(angle) * speed * random(0.5, 1.5),
+                    // 隨機發散速度 (讓粒子散開更自然)
+                    vx: cos(angle) * speed * random(0.5, 1.5), 
                     vy: sin(angle) * speed * random(0.5, 1.5),
                     life: 255, // 粒子壽命 (用來控制透明度)
                     size: random(2, 5)
@@ -130,8 +130,8 @@ function launchFirework() {
 
 
 function draw() { 
-    // background(255); // 清除背景
-    // 使用帶透明度的背景，製造殘影效果 (更像煙火)
+    
+    // 關鍵：使用帶透明度的背景，製造煙火的殘影效果
     colorMode(RGB); // 切回 RGB 處理背景透明度
     background(0, 0, 0, 25); // 黑色背景，25/255 透明度
     colorMode(HSB, 360, 100, 100, 1); // 切回 HSB 處理煙火顏色
@@ -152,7 +152,7 @@ function draw() {
         text("滿分！太棒了！", width / 2, height / 2 - 50);
         
         // -----------------------------------------------------------------
-        // C. 【新增：滿分時觸發煙火特效】
+        // C. 【觸發煙火特效】
         // -----------------------------------------------------------------
         // 每隔一段時間（例如 30 幀）發射一個新的煙火
         if (frameCount % 30 === 0) { 
@@ -182,8 +182,9 @@ function draw() {
     }
     
     // -----------------------------------------------------------------
-    // C. 【新增：更新和顯示所有煙火】
+    // C. 【更新和顯示所有煙火】
     // -----------------------------------------------------------------
+    // 必須在每次 draw() 執行時更新和繪製所有煙火粒子
     for (let i = fireworks.length - 1; i >= 0; i--) {
         fireworks[i].updateAndShow();
         if (!fireworks[i].isAlive) {
@@ -192,8 +193,8 @@ function draw() {
     }
     // -----------------------------------------------------------------
 
-    // 顯示具體分數 (使用 RGB 模式)
-    colorMode(RGB);
+    // 顯示具體分數
+    colorMode(RGB); // 切回 RGB 確保文字顏色穩定
     textSize(50);
     fill(255); // 白色文字，在黑色背景上突出
     text(`得分: ${finalScore}/${maxScore}`, width / 2, height / 2 + 50);
