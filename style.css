@@ -3,6 +3,38 @@ html, body {
   padding: 0;
 }
 
+/* 確保 Canvas 總是顯示為區塊元素 */
 canvas {
   display: block;
+}
+
+/* 步驟一：設定包裹層為相對定位 (Relative) */
+#overlap-container {
+    position: relative;
+    /* 讓容器寬度由 H5P 內容決定 */
+    /* 假設 H5P 內容有最大寬度限制 */
+    max-width: 1100px; /* 根據您的實際 H5P 內容調整 */
+    margin: 0 auto; /* 置中 */
+}
+
+/* 步驟二：設定 Canvas 容器為絕對定位 (Absolute) */
+#p5-canvas-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10; /* 確保它在 H5P 上方 */
+    pointer-events: none; /* 讓滑鼠事件穿透到下層的 H5P */
+    
+    /* 關鍵：初始隱藏 Canvas 容器 */
+    opacity: 0;
+    transition: opacity 0.5s ease; /* 增加淡入效果 */
+}
+
+/* p5.js Canvas 會自動填滿其父容器 */
+#p5-canvas-container canvas {
+    /* 確保 Canvas 完全覆蓋容器 */
+    width: 100%;
+    height: 100%;
 }
